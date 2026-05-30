@@ -10,18 +10,21 @@ const App = () => {
   const [quizReady, setQuizReady] = useState(false);
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(''); // New State for catching errors
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
+    setErrorMessage(''); // Clear error on new file
   };
 
   const handleUpload = async () => {
     if (!file) return;
     const formData = new FormData();
     formData.append('file', file);
+    setErrorMessage('');
 
     try {
-      const response = await axios.post('http://192.168.0.105:8000/upload/', formData, {
+      const response = await axios.post('http://localhost:5000/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -30,45 +33,61 @@ const App = () => {
       setFileUploaded(true);
     } catch (error) {
       console.error('Error uploading file:', error);
+      setErrorMessage('Failed to upload file to the server.');
     }
   };
 
   const handleStartQuiz = async () => {
     if (!topic) return;
     setLoading(true);
-
-    const formData = new FormData();
-    formData.append('topic', topic);
+    setErrorMessage('');
 
     try {
-      const response = await axios.post('http://192.168.0.105:8000/generate-questions/', formData, {
+      // Send standard JSON instead of FormData
+      const response = await axios.post('http://localhost:5000/api/generate-questions', {
+        topic: topic
+      }, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
       });
+      
       console.log("Questions requested successfully");
-      setQuestions(response.data); // Save questions to state
-      setLoading(false); // This would trigger the quiz component/page later
+      setQuestions(response.data); 
+      setLoading(false); 
       setQuizReady(true);
     } catch (error) {
       console.error('Error generating quiz:', error);
       setLoading(false);
+      
+      // Catch backend error details dynamically
+      const details = error.response?.data?.details || 'Google Gemini API Quota Exceeded (429). Please get a fresh API Key from Google AI Studio.';
+      setErrorMessage(details);
     }
   };
-
 
   return (
     <div>
       {questions ? (
         <QuizPage questions={questions} />
       ) : (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+          
+          {/* Global Alert Banner for errors */}
+          {errorMessage && (
+            <div className="mb-4 p-4 w-full max-w-md bg-red-100 border border-red-400 text-red-700 rounded shadow">
+              <p className="font-bold">⚠️ Generation Failed</p>
+              <p className="text-sm">{errorMessage}</p>
+            </div>
+          )}
+
           {loading ? (
-            <div className="flex items-center justify-center min-h-screen">
-              <ClipLoader color="#4A90E2" size={50} />  {/* Display spinner while loading */}
+            <div className="flex flex-col items-center justify-center">
+              <ClipLoader color="#4A90E2" size={50} />
+              <p className="mt-4 text-gray-600 font-medium">AI is generating your quiz dynamic schema...</p>
             </div>
           ) : (
-            <div className="bg-white p-6 rounded shadow-md">
+            <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
               <h1 className="text-2xl font-bold mb-4">Upload PDF to Start Quiz</h1>
               <input
                 type="file"
@@ -77,7 +96,7 @@ const App = () => {
               />
               <button
                 onClick={handleUpload}
-                className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500"
+                className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500 w-full"
               >
                 Upload
               </button>
@@ -92,14 +111,15 @@ const App = () => {
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="e.g., Docker, SQL, Hooks"
                     />
                   </div>
 
                   <button
                     onClick={handleStartQuiz}
-                    className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500"
+                    className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 w-full"
                   >
-                    Start Quiz
+                    Start AI Quiz
                   </button>
                 </>
               )}
@@ -110,7 +130,5 @@ const App = () => {
     </div>
   );
 };
-
-
 
 export default App;
