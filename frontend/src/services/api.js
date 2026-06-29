@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://assessify-ai.vercel.app/api",
+  baseURL: "https://assessify-ai.onrender.com/api",
 });
 
 // Clean, modular functions for your components to call

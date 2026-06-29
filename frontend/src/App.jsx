@@ -47,7 +47,7 @@ const App = () => {
     setErrorMessage('');
 
     try {
-      const response = await axios.post('https://assessify-ai.vercel.app/api/generate-questions', {
+      const response = await axios.post('https://assessify-ai.onrender.com/api/generate-questions', {
         topic: topic,
         filename: serverFilename
       }, {
