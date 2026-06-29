@@ -56,7 +56,7 @@ const App = () => {
     if (!file) return;
     const formData = new FormData();
     // 🔥 FIX 2: Aligned key boundary directly to 'pdf' to match strict Multer keys
-    formData.append('pdf', file);
+    formData.append("file", file);
     setErrorMessage('');
 
     try {

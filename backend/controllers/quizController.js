@@ -20,10 +20,17 @@ export const generateQuestions = async (req, res) => {
     console.log("Incoming request body:", req.body);
     const topic = req.body?.topic;
 
-    const filename = req.body?.filename || "book.pdf";
+    const filename = req.body?.filename;
+
+    if (!filename) {
+      return res.status(400).json({
+        error: "Filename is required",
+      });
+    }
+
     const targetFilePath = `./uploads/${filename}`;
 
-    const pdfText = await extractPDFText("./uploads/book.pdf");
+    const pdfText = await extractPDFText(targetFilePath);
 
     let response = await generateQuiz(pdfText, topic);
 
