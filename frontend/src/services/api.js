@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://assessify-ai.vercel.app/api",
 });
 
 // Clean, modular functions for your components to call

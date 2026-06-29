@@ -50,7 +50,7 @@ const QuizPage = ({ questions, quizTopic, onBack, onQuizComplete }) => {
       console.log("Saving quiz metrics to Supabase database...");
       
       // 1. Send the score data payload securely to your Express backend
-      await axios.post('http://localhost:5000/api/save-score', {
+      await axios.post('https://assessify-ai.vercel.app/api/save-score', {
         topic: quizTopic || "General PDF Quiz",
         total_questions: questions.length,
         score: score, 
