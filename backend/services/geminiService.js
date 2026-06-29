@@ -16,7 +16,8 @@ export const generateQuiz = async (pdfText, topic) => {
       {
         "question": "Dynamic question based on the text?",
         "options": ["Choice A", "Choice B", "Choice C", "Choice D"],
-        "correct_answer": "The exact string match of the correct option"
+        "correct_answer": "The exact string match of the correct option",
+        "explanation": "A short, one or two-sentence explanation explaining why this answer is correct and why others are wrong."
       }
     ]
     <|eot_id|><|start_header_id|>user<|end_header_id|>
@@ -28,13 +29,12 @@ export const generateQuiz = async (pdfText, topic) => {
     """
     <|eot_id|><|start_header_id|>assistant<|end_header_id|>`;
 
-  // Calling the free serverless Meta Llama 3 model
   const response = await hf.chatCompletion({
     model: "meta-llama/Meta-Llama-3-8B-Instruct",
     messages: [
       { role: "user", content: prompt }
     ],
-    max_tokens: 2000, // ⚠️ CRITICAL: Ise 800 se badhakar 2000 ya 3000 kar dein taaki 10 questions poore sama sakein bina cut-off hue!
+    max_tokens: 2500, // ⚠️ CRITICAL: Ise 800 se badhakar 2000 ya 3000 kar dein taaki 10 questions poore sama sakein bina cut-off hue!
     temperature: 0.3,
   });
 
