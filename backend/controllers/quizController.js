@@ -20,14 +20,19 @@ export const generateQuestions = async (req, res) => {
     console.log("Incoming request body:", req.body);
     const topic = req.body?.topic;
 
+    const filename = req.body?.filename || "book.pdf";
+    const targetFilePath = `./uploads/${filename}`;
+
     const pdfText = await extractPDFText("./uploads/book.pdf");
 
     let response = await generateQuiz(pdfText, topic);
 
     console.log("Raw response from AI:", response);
 
-    if (response.includes("```")) {
-      response = response.replace(/```json/gi, "").replace(/```/g, "").trim();
+    if (response.includes("```json")) {
+      response = response.split("```json")[1].split("```")[0].trim();
+    } else if (response.includes("```")) {
+      response = response.split("```")[1].split("```")[0].trim();
     }
 
     let questions;
