@@ -277,7 +277,7 @@ const App = () => {
                 )}
               </div>
             ) : (
-              <div className="animate-fade-in-up duration-2000">
+              <div className="animate-fade-in-up duration-4000">
                 <DashboardStats currentUserName={userName} />
               </div>
             )}
