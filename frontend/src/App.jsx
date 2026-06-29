@@ -27,7 +27,7 @@ const App = () => {
     setErrorMessage('');
 
     try {
-      const response = await axios.post('https://assessify-ai.vercel.app/api/upload', formData, {
+      const response = await axios.post('https://assessify-ai.onrender.com/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
