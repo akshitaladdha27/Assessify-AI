@@ -14,6 +14,12 @@ export const saveQuizScore = async (req, res) => {
       });
     }
 
+    if (!userName) {
+      return res.status(400).json({
+        error: "User name is required."
+      });
+    }
+
     // Insert the session row into our Supabase table
     const { data, error } = await supabase
       .from('quiz_history')
@@ -22,7 +28,7 @@ export const saveQuizScore = async (req, res) => {
           topic, 
           total_questions: parseInt(total_questions), 
           score: parseInt(score),
-          user_name: userName || 'Akshita Laddha' // Default fallback for local testing
+          user_name: userName // Default fallback for local testing
         }
       ])
       .select();
@@ -45,8 +51,13 @@ export const saveQuizScore = async (req, res) => {
 
 export const getUserDashboard = async (req, res) => {
   try {
-    const userName = req.query.userName || 'Akshita Laddha';
+    const userName = req.query.userName;
 
+    if (!userName) {
+      return res.status(400).json({
+        error: "User name is required."
+      });
+    }
     // Query rows belonging to this user name, sorting by newest attempts first
     const { data, error } = await supabase
       .from('quiz_history')

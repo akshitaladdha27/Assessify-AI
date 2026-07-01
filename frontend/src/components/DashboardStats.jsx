@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { fetchDashboardStats } from "../services/api.js";
 
-const DashboardStats = () => {
+const DashboardStats = ({ currentUserName }) => {
   const [stats, setStats] = useState({ totalAttempts: 0, averageScore: 0 });
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const response = await fetchDashboardStats("Akshita Laddha");
-        setStats(response.data.metrics);
-        setHistory(response.data.history);
-      } catch (error) {
-        console.error("Error loading stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadStats();
-  }, []);
+  if (!currentUserName) return;
+
+  const loadStats = async () => {
+    try {
+      const response = await fetchDashboardStats(currentUserName);
+      setStats(response.data.metrics);
+      setHistory(response.data.history);
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadStats();
+}, [currentUserName]);
 
   if (loading) return <div className="text-center py-10 text-gray-500 animate-pulse">Loading analytics...</div>;
 

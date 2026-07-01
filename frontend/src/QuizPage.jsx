@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios'; 
 
-const QuizPage = ({ questions, quizTopic, onBack, onQuizComplete }) => {
+const QuizPage = ({ questions, quizTopic, currentUserName, onBack, onQuizComplete }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [score, setScore] = useState(0);
@@ -47,17 +47,15 @@ const QuizPage = ({ questions, quizTopic, onBack, onQuizComplete }) => {
 
   const handleFinishQuiz = async () => {
     try {
-      console.log("Saving quiz metrics to Supabase database...");
       
       // 1. Send the score data payload securely to your Express backend
       await axios.post('https://assessify-ai.onrender.com/api/save-score', {
         topic: quizTopic || "General PDF Quiz",
         total_questions: questions.length,
         score: score, 
-        userName: "Akshita Laddha"
+        userName: currentUserName,
       });
       
-      console.log("✅ Quiz history recorded successfully!");
 
       // 2. Trigger the callback animation pipeline to shift tabs to your dashboard stats
       if (onQuizComplete) {

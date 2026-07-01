@@ -9,22 +9,22 @@ const App = () => {
   const [activeTab, setActiveTab] = useState("quiz");
   const [file, setFile] = useState(null);
   const [fileUploaded, setFileUploaded] = useState(false);
-  const [topic, setTopic] = useState('');
+  const [topics, setTopics] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState("");
+  const [loadingTopics, setLoadingTopics] = useState(false);
   const [quizReady, setQuizReady] = useState(false);
   const [questions, setQuestions] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [serverFilename, setServerFilename] = useState('');
+  const [uploading, setUploading] = useState(false);
   
-  // 🔥 FIX 1: Identity Isolation System State (LocalStorage Dynamic Tracking)
   const [userName, setUserName] = useState(localStorage.getItem("quiz_user_name") || "");
   const [tempName, setTempName] = useState("");
 
-  // 🎬 GSAP Animation DOM Elements Reference Handles
   const workspaceRef = useRef(null);
   const fishAssetRef = useRef(null);
 
-  // 🎬 Animation 1: Component entrance animation from top-left corner
   useEffect(() => {
     if (userName && activeTab === "quiz" && !loading && !questions) {
       gsap.fromTo(workspaceRef.current,
@@ -33,6 +33,44 @@ const App = () => {
       );
     }
   }, [userName, activeTab, loading, questions]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (questions) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [questions]);
+
+  useEffect(() => {
+    if (!questions) return;
+
+    const handlePopState = () => {
+      const leave = window.confirm(
+        "Exit the quiz? Your progress will be lost."
+      );
+
+      if (!leave) {
+        window.history.pushState(null, "", window.location.href);
+      } else {
+        handleResetQuiz();
+      }
+    };
+
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [questions]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -54,6 +92,7 @@ const App = () => {
 
   const handleUpload = async () => {
     if (!file) return;
+    setUploading(true);
     const formData = new FormData();
     // 🔥 FIX 2: Aligned key boundary directly to 'pdf' to match strict Multer keys
     formData.append("file", file);
@@ -65,17 +104,34 @@ const App = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setServerFilename(response.data.filename);
+      const filename = response.data.filename;
+
+      setServerFilename(filename);
       setFileUploaded(true);
+
+      setLoadingTopics(true);
+
+      const topicResponse = await axios.post(
+          "https://assessify-ai.onrender.com/api/get-topics",
+          {
+              filename: filename
+          }
+      );
+
+      setTopics(topicResponse.data.topics);
+      setLoadingTopics(false);
     } catch (error) {
       console.error('Error uploading file:', error);
       setErrorMessage('Failed to upload file to the server database layer.');
+      setLoadingTopics(false);
+    }finally {
+      setUploading(false);
     }
   };
 
   // 🎬 Animation 2: Premium Fish Swimming Transition Scene Sequence
   const handleStartQuiz = async () => {
-    if (!topic) return;
+    if (!selectedTopic) return;
     
     // Machli ko explicit runtime style coordinate injection dena
     gsap.set(fishAssetRef.current, { display: "block", x: 200, opacity: 0, scale: 0.7 });
@@ -99,7 +155,7 @@ const App = () => {
       setErrorMessage('');
       try {
         const response = await axios.post('https://assessify-ai.onrender.com/api/generate-questions', {
-          topic: topic,
+          topic: selectedTopic,
           filename: serverFilename // Dynamic identification parameter passing
         }, {
           headers: { 'Content-Type': 'application/json' },
@@ -124,7 +180,8 @@ const App = () => {
     setQuizReady(false);
     setFileUploaded(false);
     setFile(null);
-    setTopic('');
+    setSelectedTopic("");
+    setTopics([]);
   };
 
   return (
@@ -150,7 +207,7 @@ const App = () => {
               value={tempName}
               onChange={(e) => setTempName(e.target.value)}
               className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none mb-4"
-              placeholder="Enter your name (e.g., Akshita, Kartik)"
+              placeholder="Enter your name (e.g., Rama, Shama)"
               required
             />
             <button type="submit" className="bg-indigo-600 text-white font-bold py-2.5 rounded-xl w-full hover:bg-indigo-500 transition-all shadow-md">
@@ -191,6 +248,22 @@ const App = () => {
                   </button>
                 </div>
               )}
+              {questions && (
+                <button
+                  onClick={() => {
+                    const confirmExit = window.confirm(
+                      "Are you sure you want to exit? Your current quiz progress will be lost."
+                    );
+
+                    if (confirmExit) {
+                      handleResetQuiz();
+                    }
+                  }}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-500 transition"
+                >
+                  Exit Quiz
+                </button>
+              )}
               <button onClick={handleLogoutUser} className="text-xs text-red-500 font-bold border border-red-200 px-3 py-1.5 rounded-lg bg-red-50/50 hover:bg-red-50">
                 Change Identity
               </button>
@@ -202,8 +275,8 @@ const App = () => {
               <div className="max-w-4xl mx-auto">
                 <QuizPage 
                   questions={questions} 
-                  quizTopic={topic} 
-                  currentUserName={userName} // Pass identity context parameters safely down
+                  quizTopic={selectedTopic} 
+                  currentUserName={userName} 
                   onBack={handleResetQuiz} 
                   onQuizComplete={() => {
                     setActiveTab("dashboard");
@@ -242,16 +315,47 @@ const App = () => {
                     />
                     <button
                       onClick={handleUpload}
-                      disabled={!file}
-                      className={`mt-5 px-4 py-2.5 rounded-xl font-bold w-full transition-all duration-150 ${file ? "bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
+                      disabled={!file || uploading}
+                      className={`mt-5 px-4 py-2.5 rounded-xl font-bold w-full transition-all duration-150 flex items-center justify-center gap-2 ${
+                        !file || uploading
+                          ? "bg-slate-300 text-white cursor-not-allowed"
+                          : "bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm"
+                      }`}
                     >
-                      Upload File
+                      {uploading ? (
+                        <>
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            />
+                          </svg>
+
+                          Uploading...
+                        </>
+                      ) : (
+                        "Upload File"
+                      )}
                     </button>
 
                     {fileUploaded && (
                       <div className="mt-6 pt-6 border-t border-slate-100 animate-fade-in">
                         <div>
-                          <label htmlFor="topic" className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                          {/* <label htmlFor="topic" className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                             Target Topic Focus
                           </label>
                           <input
@@ -261,13 +365,64 @@ const App = () => {
                             onChange={(e) => setTopic(e.target.value)}
                             className="mt-2 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             placeholder="e.g., Docker Setup, React States, SQL Joins"
-                          />
+                          /> */}
+                          {loadingTopics ? (
+
+                        <div className="mt-5 text-center">
+
+                        <p className="font-semibold">
+                        📄 Reading PDF...
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                        AI is finding all available topics.
+                        </p>
+
+                        </div>
+
+                        ) : (
+
+                        <>
+
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                        Choose a Topic
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3">
+
+                        {topics.map((item) => (
+
+                        <button
+                        key={item}
+                        type="button"
+                        onClick={() => setSelectedTopic(item)}
+                        className={`p-3 rounded-xl border transition
+
+                        ${
+                        selectedTopic===item
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "bg-white hover:bg-indigo-50"
+                        }
+                        `}
+                        >
+
+                        {item}
+
+                        </button>
+
+                        ))}
+
+                        </div>
+
+                        </>
+
+                        )}
                         </div>
 
                         <button
                           onClick={handleStartQuiz}
-                          disabled={!topic}
-                          className={`mt-4 px-4 py-2.5 rounded-xl font-bold w-full transition-all duration-150 ${topic ? "bg-emerald-600 text-white hover:bg-emerald-500 shadow-md" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
+                          disabled={!selectedTopic}
+                          className={`mt-4 px-4 py-2.5 rounded-xl font-bold w-full transition-all duration-150 ${selectedTopic ? "bg-emerald-600 text-white hover:bg-emerald-500 shadow-md" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
                         >
                           Start AI Quiz
                         </button>
