@@ -129,7 +129,6 @@ const App = () => {
     }
   };
 
-  // 🎬 Animation 2: Premium Fish Swimming Transition Scene Sequence
   const handleStartQuiz = async () => {
     if (!selectedTopic) return;
     
@@ -147,33 +146,49 @@ const App = () => {
         duration: 1.4,
         ease: "power2.inOut"
       })
-      .to(workspaceRef.current, { scale: 0.9, opacity: 0, duration: 0.4 }, "-=0.8");
+      // .to(workspaceRef.current, { scale: 0.9, opacity: 0, duration: 0.4 }, "-=0.8");
 
     // Network transmission logic delayed smooth shift masking latency
-    setTimeout(async () => {
-      setLoading(true);
-      setErrorMessage('');
-      try {
-        const response = await axios.post('https://assessify-ai.onrender.com/api/generate-questions', {
-          topic: selectedTopic,
-          filename: serverFilename // Dynamic identification parameter passing
-        }, {
-          headers: { 'Content-Type': 'application/json' },
-        });
-        
+    setTimeout(() => {
+    setLoading(true); // Isse loader ghumne lagega agar card ke andar spinner chal raha hai
+    setErrorMessage('');
+  }, 400);
+
+  try {
+    // 3. Keep displaying the UI while fetching data over the network
+    const response = await axios.post('https://assessify-ai.onrender.com/api/generate-questions', {
+      topic: selectedTopic,
+      filename: serverFilename 
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    // 4. 🔥 PREMIUM TRANSITION: Jab data aa jaye, tab smoothly card ko fade-out karo!
+    gsap.to(workspaceRef.current, {
+      scale: 0.9,
+      opacity: 0,
+      duration: 0.3,
+      onComplete: () => {
+        // Fade out complete hone ke baad hi states update hongi aur QuizPage load hoga
         setQuestions(response.data); 
         setLoading(false); 
         setQuizReady(true);
-      } catch (error) {
-        console.error('Error generating quiz:', error);
-        setLoading(false);
-        const details = error.response?.data?.details || 'AI configuration parsing fault occurred.';
-        setErrorMessage(details);
-      } finally {
-        gsap.set(fishAssetRef.current, { display: "none" }); // clean transition element cache
+        
+        // Naye page ko smoothly wapas visible karo
+        gsap.to(workspaceRef.current, { scale: 1, opacity: 1, duration: 0.1 });
       }
-    }, 1200);
-  };
+    });
+
+  } catch (error) {
+    console.error('Error generating quiz:', error);
+    setLoading(false);
+    const details = error.response?.data?.details || 'AI configuration parsing fault occurred.';
+    setErrorMessage(details);
+  } finally {
+    // Clean transition element asset cache safely
+    gsap.set(fishAssetRef.current, { display: "none" }); 
+  }
+};
 
   const handleResetQuiz = () => {
     setQuestions(null);
