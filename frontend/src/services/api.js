@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const API = axios.create({
-  baseURL: "https://assessify-ai.onrender.com/api",
+  baseURL: `${API_URL}/api`,
 });
 
 // Clean, modular functions for your components to call

@@ -5,6 +5,8 @@ import QuizPage from './QuizPage';
 import DashboardStats from './components/DashboardStats';
 import { ClipLoader } from 'react-spinners';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const App = () => {
   const [activeTab, setActiveTab] = useState("quiz");
   const [file, setFile] = useState(null);
@@ -94,12 +96,11 @@ const App = () => {
     if (!file) return;
     setUploading(true);
     const formData = new FormData();
-    // 🔥 FIX 2: Aligned key boundary directly to 'pdf' to match strict Multer keys
     formData.append("file", file);
     setErrorMessage('');
 
     try {
-      const response = await axios.post('https://assessify-ai.onrender.com/api/upload', formData, {
+      const response = await axios.post(`${API_URL}/api/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -112,7 +113,7 @@ const App = () => {
       setLoadingTopics(true);
 
       const topicResponse = await axios.post(
-          "https://assessify-ai.onrender.com/api/get-topics",
+          `${API_URL}/api/get-topics`,
           {
               filename: filename
           }
@@ -131,32 +132,15 @@ const App = () => {
 
   const handleStartQuiz = async () => {
     if (!selectedTopic) return;
-    
-    // Machli ko explicit runtime style coordinate injection dena
-    gsap.set(fishAssetRef.current, { display: "block", x: 200, opacity: 0, scale: 0.7 });
 
-    const fishTimeline = gsap.timeline();
-    fishTimeline
-      .to(fishAssetRef.current, { opacity: 1, duration: 0.2 })
-      .to(fishAssetRef.current, {
-        x: -window.innerWidth - 300,
-        y: -100,
-        scale: 1.8,
-        rotation: -15,
-        duration: 1.4,
-        ease: "power2.inOut"
-      })
-      // .to(workspaceRef.current, { scale: 0.9, opacity: 0, duration: 0.4 }, "-=0.8");
-
-    // Network transmission logic delayed smooth shift masking latency
     setTimeout(() => {
-    setLoading(true); // Isse loader ghumne lagega agar card ke andar spinner chal raha hai
+    setLoading(true); 
     setErrorMessage('');
   }, 400);
 
   try {
     // 3. Keep displaying the UI while fetching data over the network
-    const response = await axios.post('https://assessify-ai.onrender.com/api/generate-questions', {
+    const response = await axios.post(`${API_URL}/api/generate-questions`, {
       topic: selectedTopic,
       filename: serverFilename 
     }, {

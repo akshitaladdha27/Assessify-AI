@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios'; 
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const QuizPage = ({ questions, quizTopic, currentUserName, onBack, onQuizComplete }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -49,7 +51,7 @@ const QuizPage = ({ questions, quizTopic, currentUserName, onBack, onQuizComplet
     try {
       
       // 1. Send the score data payload securely to your Express backend
-      await axios.post('https://assessify-ai.onrender.com/api/save-score', {
+      await axios.post(`${API_URL}/api/save-score`, {
         topic: quizTopic || "General PDF Quiz",
         total_questions: questions.length,
         score: score, 
