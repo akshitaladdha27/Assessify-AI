@@ -30,16 +30,6 @@ export const uploadPDF = async (req, res) => {
   }
 };
 
-/**
- * NEW: call this right after upload.
- * Reads the PDF and asks the AI which topics it actually contains, so the
- * frontend can show the user a list to pick from instead of a free-text
- * box. This is what removes the "topic mismatch" problem at the root -
- * the user can only ever choose a topic the AI already confirmed exists.
- *
- * Expects: { filename } in the body
- * Returns: { success, topics: string[] }
- */
 export const getTopics = async (req, res) => {
   try {
     const filename = req.body?.filename;
@@ -79,10 +69,6 @@ export const getTopics = async (req, res) => {
   }
 };
 
-/**
- * Expects: { filename, topic } in the body, where `topic` is one of the
- * strings returned by getTopics() above.
- */
 export const generateQuestions = async (req, res) => {
   try {
     const topic = req.body?.topic;
@@ -103,11 +89,6 @@ export const generateQuestions = async (req, res) => {
     const buffer = Buffer.from(await data.arrayBuffer());
 
     const pdfText = await extractPDFText(buffer);
-
-    // No more naive `cleanText.includes(cleanTopic)` string matching here.
-    // That check was unreliable (plurals, phrasing, punctuation) and is no
-    // longer needed: the topic the user picked came directly from
-    // extractTopics(), so it is already guaranteed to exist in the PDF.
 
     let response = await generateQuiz(pdfText, topic);
 

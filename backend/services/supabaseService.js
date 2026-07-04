@@ -10,5 +10,4 @@ if (!supabaseUrl || !supabaseKey) {
   console.error("❌ Missing Supabase environment variables in .env!");
 }
 
-// Initialize the secure client instance
 export const supabase = createClient(supabaseUrl, supabaseKey);

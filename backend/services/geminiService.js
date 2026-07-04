@@ -7,10 +7,6 @@ const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 const MODEL = "meta-llama/Meta-Llama-3-8B-Instruct";
 
-// Keep the prompt inside a safe token budget. The old code sliced this into
-// `truncatedText` but then never actually used it -> the FULL pdf text was
-// being sent every time, which is the main reason topic-specific quizzes
-// looked identical (the model was silently truncating/ignoring context).
 const MAX_CONTEXT_CHARS = 8000;
 
 /**
