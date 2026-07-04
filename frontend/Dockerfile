@@ -1,5 +1,5 @@
 # Create a new build stage from a base image.
-FROM node:24-alpine
+FROM node:20-alpine
 # apline - sabse choti, lightweight aur super-fast Linux image.
 
 # Change working directory.
