@@ -1,0 +1,106 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Gitleaks — Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep:
+    name: Semgrep — SAST
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run Semgrep
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            returntocorp/semgrep:latest \
+            semgrep scan \
+              --config p/security-audit \
+              --config p/javascript \
+              --config p/nodejs \
+              --config p/react \
+              --config p/secrets \
+              --config p/owasp-top-ten \
+              --error \
+              --exclude node_modules \
+              --exclude dist \
+              backend frontend
+
+  trivy:
+    name: Trivy — Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Scan filesystem (dependencies)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          skip-dirs: node_modules,dist,.git
+          trivyignores: .trivyignore
+
+      - name: Scan Dockerfiles (misconfigurations)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: backend,frontend
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: 1
+
+      - name: Build backend image
+        run: docker build -t quizcrafter-backend:${{ github.sha }} ./backend
+
+      - name: Build frontend image
+        run: docker build -t quizcrafter-frontend:${{ github.sha }} ./frontend
+
+      - name: Scan backend container image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: quizcrafter-backend:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      - name: Scan frontend container image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: quizcrafter-frontend:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
