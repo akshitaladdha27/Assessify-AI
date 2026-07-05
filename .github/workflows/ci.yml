@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
-  continuous-integration:
+  testing-phase:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,3 +24,56 @@ jobs:
 
     - name: Clean up Test Containers
       run: docker compose -f docker-compose.test.yml down
+
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy.sarif'
+      - uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: semgrep ci
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3 # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}}
+
+  osv-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8"
+
+  workflow-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: zizmorcore/zizmor-action@v0.5.6
+      - uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: zizmor.sarif
+          category: zizmor
+
