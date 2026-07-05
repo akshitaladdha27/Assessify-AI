@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: semgrep ci
+      - run: semgrep ci --sarif --output semgrep.sarif
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
       - uses: github/codeql-action/upload-sarif@v4
@@ -74,6 +74,6 @@ jobs:
       - uses: zizmorcore/zizmor-action@v0.5.6
       - uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: zizmor.sarif
+          sarif_file: results.sarif
           category: zizmor
 
