@@ -2,6 +2,8 @@
 
 An AI-powered quiz generation platform that turns PDF study material into interactive quizzes. Upload a document, let the AI detect topics covered in the file, pick a topic, and take a custom-generated quiz. Scores and history are stored so you can track progress over time.
 
+Link: https://assessify-ai.vercel.app/
+
 ## Overview
 
 QuizCrafter is a full-stack web application with a React frontend and an Express API backend. PDFs are stored in Supabase, and quiz generation is powered by Hugging Face (Meta Llama 3). The project is containerized with Docker, orchestrated locally with Docker Compose, and deployable to a local Kubernetes cluster.
@@ -47,23 +49,6 @@ QuizCrafter/
 - Supabase project (URL + keys)
 - Hugging Face API key
 
-### Environment variables
-
-**Backend** (`backend/.env`):
-
-```
-PORT=5000
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=your_key
-HUGGINGFACE_API_KEY=your_hf_key
-```
-
-**Frontend** (`frontend/.env`):
-
-```
-VITE_API_URL=http://localhost:5000
-```
-
 ### Run locally (without Docker)
 
 ```bash
@@ -77,9 +62,6 @@ cd frontend
 npm install --legacy-peer-deps
 npm run dev
 ```
-
-- Frontend: http://localhost:5173  
-- Backend: http://localhost:5000  
 
 ### Run with Docker Compose
 
@@ -145,41 +127,6 @@ Kubernetes manifests deploy the app as scalable, self-healing workloads on a **l
 Both deployments use locally built images (`quizcrafter-backend:latest`, `quizcrafter-frontend:latest`) with `imagePullPolicy: Never`, which is typical for local clusters where images are built on the same machine.
 
 The backend loads environment variables from a Kubernetes **Secret** named `backend-secret` (Supabase keys, Hugging Face API key, etc.).
-
-### Local cluster setup (example)
-
-```bash
-# 1. Start a local cluster (pick one)
-minikube start
-# or: kind create cluster
-# or: enable Kubernetes in Docker Desktop
-
-# 2. Build images against your local cluster
-eval $(minikube docker-env)   # if using Minikube
-docker build -t quizcrafter-backend:latest ./backend
-docker build -t quizcrafter-frontend:latest ./frontend
-
-# 3. Create backend secrets
-kubectl create secret generic backend-secret \
-  --from-literal=SUPABASE_URL=your_url \
-  --from-literal=SUPABASE_SERVICE_ROLE_KEY=your_key \
-  --from-literal=HUGGINGFACE_API_KEY=your_key
-
-# 4. Apply manifests
-kubectl apply -f backend/backend.yaml
-kubectl apply -f frontend/frontend.yaml
-
-# 5. Check status
-kubectl get pods
-kubectl get services
-```
-
-To access services locally, use port-forwarding or an Ingress/NodePort depending on your cluster setup:
-
-```bash
-kubectl port-forward service/backend-service 5000:5000
-kubectl port-forward service/frontend-service 5173:5173
-```
 
 ### Why Kubernetes here
 
